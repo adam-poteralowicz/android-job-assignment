@@ -16,7 +16,7 @@ import coil.compose.rememberAsyncImagePainter
 import coil.imageLoader
 
 @Composable
-fun MealImage(thumb: String, modifier: Modifier = Modifier) {
+fun MealImage(thumbnail: String, modifier: Modifier = Modifier) {
     Box(
         modifier
             .clip(RoundedCornerShape(4.dp))
@@ -25,7 +25,7 @@ fun MealImage(thumb: String, modifier: Modifier = Modifier) {
     ) {
         Image(
             painter = rememberAsyncImagePainter(
-                model = thumb,
+                model = thumbnail,
                 imageLoader = LocalContext.current.imageLoader
             ),
             contentDescription = "thumb",
