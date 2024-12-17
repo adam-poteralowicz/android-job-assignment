@@ -13,6 +13,8 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
+    private const val BASE_URL = "https://www.themealdb.com"
+
     @Singleton
     @Provides
     fun provideMoshi(): Moshi = Moshi.Builder()
@@ -21,7 +23,7 @@ object NetworkModule {
     @Singleton
     @Provides
     fun provideBackendApi(moshi: Moshi): BackendApi = Retrofit.Builder()
-        .baseUrl("https://www.themealdb.com")
+        .baseUrl(BASE_URL)
         .addConverterFactory(MoshiConverterFactory.create(moshi).asLenient())
         .build()
         .create(BackendApi::class.java)

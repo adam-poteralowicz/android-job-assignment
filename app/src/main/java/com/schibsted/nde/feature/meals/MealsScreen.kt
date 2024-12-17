@@ -2,6 +2,7 @@ package com.schibsted.nde.feature.meals
 
 import android.content.res.Configuration
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -42,6 +43,7 @@ import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -66,7 +68,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 @Composable
-fun MealsScreen(viewModel: MealsViewModel = hiltViewModel()) {
+fun MealsScreen(
+    viewModel: MealsViewModel = hiltViewModel(),
+    navigateToDetails: (String) -> Unit
+) {
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
     val modalBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
@@ -91,7 +96,7 @@ fun MealsScreen(viewModel: MealsViewModel = hiltViewModel()) {
                 }
             )
         },
-            content = { MealsScreenContent() }
+            content = { MealsScreenContent(navigateToDetails) }
         )
     }
 }
@@ -147,7 +152,10 @@ fun ModalBottomSheetContent(
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun MealsScreenContent(viewModel: MealsViewModel = hiltViewModel()) {
+fun MealsScreenContent(
+    navigateToDetails: (String) -> Unit,
+    viewModel: MealsViewModel = hiltViewModel()
+) {
     val state by viewModel.state.collectAsState()
 
     Box(Modifier
@@ -160,10 +168,16 @@ fun MealsScreenContent(viewModel: MealsViewModel = hiltViewModel()) {
         )
     ) {
         Column {
+            val selected = state.selectedMeal
             when {
                 state.isLoading -> return
                 state.filteredMeals.isEmpty() -> {
                     Text(text = LocalContext.current.getString(R.string.no_meals_found))
+                }
+                selected != null -> {
+                    LaunchedEffect(Unit) {
+                        navigateToDetails(selected.idMeal)
+                    }
                 }
                 else -> MealGridContent(state)
             }
@@ -205,13 +219,14 @@ fun MealGridContent(state: MealsViewState) {
 }
 
 @Composable
-fun MealRowComposable(meal: MealResponse) {
+fun MealRowComposable(meal: MealResponse, viewModel: MealsViewModel = hiltViewModel()) {
     Row(
         Modifier
             .fillMaxWidth()
             .background(colors.surface)
             .clip(RoundedCornerShape(4.dp))
             .padding(16.dp)
+            .clickable { viewModel.onMealChosen(meal) }
     ) {
         MealImage(meal.strMealThumb, Modifier.size(64.dp))
         Column(

@@ -5,5 +5,5 @@ data class MealResponse(
     val strMeal: String,
     val strCategory: String,
     val strMealThumb: String,
-    val strYoutube: String?,
+    val strInstructions: String
 )

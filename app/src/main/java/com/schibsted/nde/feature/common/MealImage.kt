@@ -28,7 +28,7 @@ fun MealImage(thumbnail: String, modifier: Modifier = Modifier) {
                 model = thumbnail,
                 imageLoader = LocalContext.current.imageLoader
             ),
-            contentDescription = "thumb",
+            contentDescription = "mealThumb",
             modifier = Modifier.fillMaxSize(),
         )
     }

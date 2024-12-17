@@ -3,6 +3,7 @@ package com.schibsted.nde.feature.meals
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.schibsted.nde.data.MealsRepository
+import com.schibsted.nde.model.MealResponse
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -41,6 +42,12 @@ class MealsViewModel @Inject constructor(
                 }
             }
             _state.emit(_state.value.copy(query = query, filteredMeals = filteredMeals))
+        }
+    }
+
+    fun onMealChosen(meal: MealResponse) {
+        viewModelScope.launch {
+            _state.emit(_state.value.copy(selectedMeal = meal))
         }
     }
 }
