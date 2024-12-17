@@ -40,13 +40,19 @@ class MainActivity : AppCompatActivity() {
 @Composable
 fun NavGraph(navController: NavHostController) {
     NavHost(navController, startDestination = MEALS) {
-        composable(MEALS) { MealsScreen(navigateToDetails = { details ->
-            navController.currentBackStackEntry?.savedStateHandle?.set("details", details)
-            navController.navigate(DETAILS)
-        }) }
+        composable(MEALS) {
+            MealsScreen(navigateToDetails = { details ->
+                navController.currentBackStackEntry?.savedStateHandle?.set("details", details)
+                navController.navigate(DETAILS)
+            })
+        }
         composable(DETAILS) {
             BackHandler {
-                navController.navigate(MEALS)
+                navController.navigate(MEALS) {
+                    popUpTo(MEALS) {
+                        inclusive = true
+                    }
+                }
             }
             val details: MealDetails? = navController.previousBackStackEntry?.savedStateHandle?.get("details")
             details?.let { DetailsScreen(it) }
