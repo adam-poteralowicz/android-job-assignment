@@ -1,9 +1,8 @@
 package com.schibsted.nde.feature.meals
 
-import android.annotation.SuppressLint
 import android.content.res.Configuration
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -28,7 +27,9 @@ import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
+import androidx.compose.material.MaterialTheme.colors
 import androidx.compose.material.ModalBottomSheetLayout
+import androidx.compose.material.ModalBottomSheetState
 import androidx.compose.material.ModalBottomSheetValue
 import androidx.compose.material.OutlinedButton
 import androidx.compose.material.Scaffold
@@ -37,9 +38,12 @@ import androidx.compose.material.TextField
 import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -47,157 +51,172 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import com.google.accompanist.swiperefresh.SwipeRefresh
-import com.google.accompanist.swiperefresh.SwipeRefreshIndicator
-import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.schibsted.nde.R
 import com.schibsted.nde.feature.common.MealImage
+import com.schibsted.nde.model.MealDetails
 import com.schibsted.nde.model.MealResponse
 import com.schibsted.nde.ui.typography
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
-@SuppressLint("UnusedMaterialScaffoldPaddingParameter")
-@OptIn(ExperimentalMaterialApi::class, ExperimentalComposeUiApi::class)
-@ExperimentalFoundationApi
 @Composable
-fun MealsScreen(viewModel: MealsViewModel) {
+fun MealsScreen(
+    viewModel: MealsViewModel = hiltViewModel(),
+    navigateToDetails: (MealDetails) -> Unit
+) {
     val coroutineScope = rememberCoroutineScope()
-    val modalBottomSheetState =
-        rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
+    val context = LocalContext.current
+    val modalBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
 
-    ModalBottomSheetLayout(sheetContent = {
-        val focusManager = LocalFocusManager.current
-        if (modalBottomSheetState.currentValue != ModalBottomSheetValue.Hidden) {
-            DisposableEffect(Unit) {
-                onDispose {
-                    focusManager.clearFocus()
-                }
-            }
-        }
-        Column(modifier = Modifier.padding(16.dp)) {
-            var query by rememberSaveable { mutableStateOf("") }
-
-            TextField(
-                value = query,
-                onValueChange = { query = it },
-                label = { Text("Query") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = {
-                    viewModel.submitQuery(query)
-                    coroutineScope.launch {
-                        modalBottomSheetState.hide()
+    ModalBottomSheetLayout(
+        sheetContent = { ModalBottomSheetContent(
+            state = modalBottomSheetState,
+            onSearch = { query -> viewModel.submitQuery(query) },
+            coroutineScope = coroutineScope
+        ) },
+        sheetState = modalBottomSheetState
+    ) {
+        Scaffold(topBar = {
+            TopAppBar(
+                title = { Text(context.getString(R.string.app_name)) },
+                actions = {
+                    IconButton(onClick = {
+                        coroutineScope.launch { modalBottomSheetState.show() }
+                    }) {
+                        Icon(Icons.Filled.Search, "search")
                     }
-                }),
-                modifier = Modifier.fillMaxWidth()
+                }
             )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(modifier = Modifier.align(Alignment.End)) {
-                OutlinedButton(onClick = {
-                    viewModel.submitQuery(null)
-                    query = ""
-                    coroutineScope.launch {
-                        modalBottomSheetState.hide()
-                    }
-                }) {
-                    Text(text = "Clear")
-                }
-                Spacer(modifier = Modifier.width(16.dp))
-                Button(onClick = {
-                    viewModel.submitQuery(query)
-                    coroutineScope.launch {
-                        modalBottomSheetState.hide()
-                    }
-                }) {
-                    Text(text = "Search")
-                }
-            }
         }
-    }, sheetState = modalBottomSheetState) {
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = {
-                        Text("Food App")
-                    },
-                    actions = {
-                        IconButton(onClick = {
-                            coroutineScope.launch {
-                                modalBottomSheetState.show()
-                            }
-                        }) {
-                            Icon(Icons.Filled.Search, "search")
-                        }
-                    }
-                )
-            },
-            content = {
-                MealsScreenContent(viewModel)
-            }
-        )
+        ) { MealsScreenContent(navigateToDetails) }
     }
 }
 
-@ExperimentalFoundationApi
 @Composable
-fun MealsScreenContent(viewModel: MealsViewModel) {
+fun ModalBottomSheetContent(
+    state: ModalBottomSheetState,
+    onSearch: (String?) -> Unit,
+    coroutineScope: CoroutineScope
+) {
+    val context = LocalContext.current
+    val focusManager = LocalFocusManager.current
+    if (state.currentValue != ModalBottomSheetValue.Hidden) {
+        DisposableEffect(Unit) {
+            onDispose {
+                focusManager.clearFocus()
+            }
+        }
+    }
+    Column(Modifier.padding(16.dp)) {
+        var query by rememberSaveable { mutableStateOf("") }
+        TextField(
+            value = query,
+            onValueChange = { query = it },
+            label = { Text(context.getString(R.string.query)) },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(onSearch = {
+                onSearch(query)
+                coroutineScope.launch { state.hide() }
+            }),
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(Modifier.height(8.dp))
+        Row(Modifier.align(Alignment.End)) {
+            OutlinedButton(onClick = {
+                onSearch(null)
+                query = ""
+                coroutineScope.launch { state.hide() }
+            }) {
+                Text(context.getString(R.string.clear))
+            }
+            Spacer(Modifier.width(16.dp))
+            Button(onClick = {
+                onSearch(query)
+                coroutineScope.launch { state.hide() }
+            }) {
+                Text(context.getString(R.string.search))
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterialApi::class)
+@Composable
+fun MealsScreenContent(
+    navigateToDetails: (MealDetails) -> Unit,
+    viewModel: MealsViewModel = hiltViewModel()
+) {
     val state by viewModel.state.collectAsState()
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(Modifier
+        .fillMaxSize()
+        .pullRefresh(
+            state = rememberPullRefreshState(
+                refreshing = state.isLoading,
+                onRefresh = { viewModel.loadMeals() }
+            )
+        )
+    ) {
         Column {
-            SwipeRefresh(
-                state = rememberSwipeRefreshState(state.isLoading),
-                onRefresh = { viewModel.loadMeals() },
-                indicator = { state, trigger -> SwipeRefreshIndicator(state, trigger) },
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .fillMaxSize()
-            ) {
-                if (!state.isLoading) {
-                    if (state.filteredMeals.isEmpty()) {
-                        Text(text = "No meals found")
-                    } else {
-                        val orientation = LocalConfiguration.current.orientation
-                        if (orientation == Configuration.ORIENTATION_PORTRAIT) {
-                            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                                items(state.filteredMeals) { meal ->
-                                    Divider(thickness = 8.dp)
-                                    MealRowComposable(meal)
-                                }
-                            }
-                        } else {
-                            LazyVerticalGrid(
-                                columns = GridCells.Fixed(2),
-                                modifier = Modifier.background(
-                                    MaterialTheme.colors.onSurface.copy(
-                                        alpha = 0.12f
-                                    )
-                                )
-                            ) {
-                                itemsIndexed(state.filteredMeals) { index, meal ->
-                                    val isFirstColumn = index % 2 == 0
-                                    Column(
-                                        Modifier.padding(
-                                            if (isFirstColumn) 8.dp else 4.dp,
-                                            8.dp,
-                                            if (isFirstColumn) 4.dp else 8.dp,
-                                            0.dp
-                                        )
-                                    ) {
-                                        MealRowComposable(meal)
-                                    }
-                                }
-                            }
-                        }
+            val selected = state.selectedMeal
+            when {
+                state.isLoading -> return
+                state.filteredMeals.isEmpty() -> {
+                    Text(text = LocalContext.current.getString(R.string.no_meals_found))
+                }
+                selected != null -> {
+                    LaunchedEffect(Unit) {
+                        val details = MealDetails(
+                            image = selected.strMealThumb,
+                            name = selected.strMeal,
+                            instructions = selected.strInstructions
+                        )
+                        navigateToDetails(details)
                     }
+                }
+                else -> MealGridContent(state)
+            }
+        }
+    }
+}
+
+@Composable
+fun MealGridContent(state: MealsViewState) {
+    val orientation = LocalConfiguration.current.orientation
+    if (orientation == Configuration.ORIENTATION_PORTRAIT) {
+        LazyColumn(Modifier.fillMaxSize()) {
+            items(state.filteredMeals) { meal ->
+                Divider(thickness = 8.dp)
+                MealRowComposable(meal)
+            }
+        }
+    } else {
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(2),
+            modifier = Modifier.background(
+                colors.onSurface.copy(
+                    alpha = 0.12f
+                )
+            )
+        ) {
+            itemsIndexed(state.filteredMeals) { index, meal ->
+                val isFirstColumn = index % 2 == 0
+                Column(
+                    Modifier
+                        .padding(horizontal = if (isFirstColumn) 8.dp else 4.dp)
+                        .padding(top = 8.dp, bottom = 0.dp)
+                ) {
+                    MealRowComposable(meal)
                 }
             }
         }
@@ -205,20 +224,20 @@ fun MealsScreenContent(viewModel: MealsViewModel) {
 }
 
 @Composable
-fun MealRowComposable(meal: MealResponse) {
+fun MealRowComposable(meal: MealResponse, viewModel: MealsViewModel = hiltViewModel()) {
     Row(
-        modifier = Modifier
+        Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colors.surface)
+            .background(colors.surface)
             .clip(RoundedCornerShape(4.dp))
             .padding(16.dp)
+            .clickable { viewModel.onMealChosen(meal) }
     ) {
         MealImage(meal.strMealThumb, Modifier.size(64.dp))
         Column(
-            modifier = Modifier
+            Modifier
                 .padding(start = 8.dp)
-                .align(Alignment.CenterVertically)
-        ) {
+                .align(Alignment.CenterVertically)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     meal.strCategory,
@@ -226,8 +245,8 @@ fun MealRowComposable(meal: MealResponse) {
                     modifier = Modifier.weight(1f)
                 )
             }
-            Text(
-                meal.strMeal, fontWeight = FontWeight.Bold,
+            Text(text = meal.strMeal,
+                fontWeight = FontWeight.Bold,
                 style = typography.h6
             )
         }

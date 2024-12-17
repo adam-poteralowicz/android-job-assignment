@@ -1,3 +1,7 @@
 <resources>
-    <string name="app_name">Android Job Assignment</string>
+    <string name="app_name">Food App</string>
+    <string name="clear">Clear</string>
+    <string name="no_meals_found">No meals found</string>
+    <string name="query">Query</string>
+    <string name="search">Search</string>
 </resources>
