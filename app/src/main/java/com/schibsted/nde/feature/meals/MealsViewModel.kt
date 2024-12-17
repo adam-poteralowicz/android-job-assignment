@@ -3,8 +3,11 @@ package com.schibsted.nde.feature.meals
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.schibsted.nde.data.MealsRepository
+import com.schibsted.nde.database.AppDatabase
+import com.schibsted.nde.database.MealEntity
 import com.schibsted.nde.model.MealResponse
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -13,11 +16,14 @@ import javax.inject.Inject
 @HiltViewModel
 class MealsViewModel @Inject constructor(
     private val mealsRepository: MealsRepository,
+    private val appDatabase: AppDatabase
 ) : ViewModel() {
     private val _state = MutableStateFlow(MealsViewState(isLoading = true))
 
     val state: StateFlow<MealsViewState>
         get() = _state
+
+    val allMeals: Flow<List<MealResponse>> = mealsRepository.allMealsFlow
 
     init {
         loadMeals()
@@ -49,5 +55,10 @@ class MealsViewModel @Inject constructor(
         viewModelScope.launch {
             _state.emit(_state.value.copy(selectedMeal = meal))
         }
+    }
+
+    fun addMealsToDatabase(meals: List<MealResponse>) = viewModelScope.launch {
+        val entities = meals.map { MealEntity(it.idMeal, it.strCategory, it.strMeal, it.strMealThumb, it.strInstructions) }
+        appDatabase.mealDao().insertAll(entities)
     }
 }
