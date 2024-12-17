@@ -62,6 +62,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.schibsted.nde.R
 import com.schibsted.nde.feature.common.MealImage
+import com.schibsted.nde.model.MealDetails
 import com.schibsted.nde.model.MealResponse
 import com.schibsted.nde.ui.typography
 import kotlinx.coroutines.CoroutineScope
@@ -70,7 +71,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun MealsScreen(
     viewModel: MealsViewModel = hiltViewModel(),
-    navigateToDetails: (String) -> Unit
+    navigateToDetails: (MealDetails) -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -95,9 +96,8 @@ fun MealsScreen(
                     }
                 }
             )
-        },
-            content = { MealsScreenContent(navigateToDetails) }
-        )
+        }
+        ) { MealsScreenContent(navigateToDetails) }
     }
 }
 
@@ -153,7 +153,7 @@ fun ModalBottomSheetContent(
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun MealsScreenContent(
-    navigateToDetails: (String) -> Unit,
+    navigateToDetails: (MealDetails) -> Unit,
     viewModel: MealsViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -176,7 +176,12 @@ fun MealsScreenContent(
                 }
                 selected != null -> {
                     LaunchedEffect(Unit) {
-                        navigateToDetails(selected.idMeal)
+                        val details = MealDetails(
+                            image = selected.strMealThumb,
+                            name = selected.strMeal,
+                            instructions = selected.strInstructions
+                        )
+                        navigateToDetails(details)
                     }
                 }
                 else -> MealGridContent(state)
