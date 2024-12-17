@@ -157,6 +157,8 @@ fun MealsScreenContent(
     viewModel: MealsViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
+    val allMeals by viewModel.allMeals.collectAsState(initial = state.filteredMeals)
+    val coroutineScope = rememberCoroutineScope()
 
     Box(Modifier
         .fillMaxSize()
@@ -184,18 +186,29 @@ fun MealsScreenContent(
                         navigateToDetails(details)
                     }
                 }
-                else -> MealGridContent(state)
+                else -> {
+                    if (allMeals.isNotEmpty()) {
+                        MealGridContent(allMeals)
+                    } else {
+                        MealGridContent(state.filteredMeals)
+                        LaunchedEffect(Unit) {
+                            coroutineScope.launch {
+                                viewModel.addMealsToDatabase(state.meals)
+                            }
+                        }
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
-fun MealGridContent(state: MealsViewState) {
+fun MealGridContent(meals: List<MealResponse>) {
     val orientation = LocalConfiguration.current.orientation
     if (orientation == Configuration.ORIENTATION_PORTRAIT) {
         LazyColumn(Modifier.fillMaxSize()) {
-            items(state.filteredMeals) { meal ->
+            items(meals) { meal ->
                 Divider(thickness = 8.dp)
                 MealRowComposable(meal)
             }
@@ -209,7 +222,7 @@ fun MealGridContent(state: MealsViewState) {
                 )
             )
         ) {
-            itemsIndexed(state.filteredMeals) { index, meal ->
+            itemsIndexed(meals) { index, meal ->
                 val isFirstColumn = index % 2 == 0
                 Column(
                     Modifier
