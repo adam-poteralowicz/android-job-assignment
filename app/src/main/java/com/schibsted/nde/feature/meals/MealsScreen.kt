@@ -60,6 +60,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.schibsted.nde.R
 import com.schibsted.nde.feature.common.MealImage
@@ -169,38 +170,42 @@ fun MealsScreenContent(
             )
         )
     ) {
-        Column {
-            val selected = state.selectedMeal
-            when {
-                state.isLoading -> return
-                state.filteredMeals.isEmpty() -> {
-                    Text(text = stringResource(R.string.no_meals_found))
+        if (state.isLoading) return
+        val selected = state.selectedMeal
+        when {
+            state.filteredMeals.isEmpty() -> {
+                Box(Modifier.align(Alignment.Center)) {
+                    Text(
+                        text = stringResource(R.string.no_meals_found),
+                        style = MaterialTheme.typography.h6,
+                        fontSize = 28.sp
+                    )
                 }
-                selected != null -> {
+            }
+            selected != null -> {
+                LaunchedEffect(Unit) {
+                    val details = MealDetails(
+                        image = selected.strMealThumb,
+                        name = selected.strMeal,
+                        instructions = selected.strInstructions
+                    )
+                    navigateToDetails(details)
+                }
+            }
+            else -> Column {
+                if (allMeals.isEmpty()) {
+                    MealGridContent(state.filteredMeals)
                     LaunchedEffect(Unit) {
-                        val details = MealDetails(
-                            image = selected.strMealThumb,
-                            name = selected.strMeal,
-                            instructions = selected.strInstructions
-                        )
-                        navigateToDetails(details)
-                    }
-                }
-                else -> {
-                    if (allMeals.isEmpty() ) {
-                        MealGridContent(state.filteredMeals)
-                        LaunchedEffect(Unit) {
-                            coroutineScope.launch {
-                                viewModel.addMealsToDatabase(state.meals)
-                            }
+                        coroutineScope.launch {
+                            viewModel.addMealsToDatabase(state.meals)
                         }
-                    } else {
-                        MealGridContent(
-                            viewModel.state.value.query?.let { query ->
-                                allMeals.filterByName(query)
-                            } ?: allMeals
-                        )
                     }
+                } else {
+                    MealGridContent(
+                        viewModel.state.value.query?.let { query ->
+                            allMeals.filterByName(query)
+                        } ?: allMeals
+                    )
                 }
             }
         }
