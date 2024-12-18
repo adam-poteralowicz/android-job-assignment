@@ -29,24 +29,20 @@ class MealsViewModel @Inject constructor(
         loadMeals()
     }
 
-    fun loadMeals() {
-        viewModelScope.launch {
-            _state.emit(_state.value.copy(isLoading = true))
-            val meals = mealsRepository.getMeals()
-            _state.emit(_state.value.copy(meals = meals, filteredMeals = meals))
-            _state.emit(_state.value.copy(isLoading = false))
-        }
+    fun loadMeals() = viewModelScope.launch {
+        _state.emit(_state.value.copy(isLoading = true))
+        val meals = mealsRepository.getMeals()
+        _state.emit(_state.value.copy(meals = meals, filteredMeals = meals))
+        _state.emit(_state.value.copy(isLoading = false))
     }
 
     fun submitQuery(query: String?) {
         viewModelScope.launch {
             val filteredMeals = if (query?.isNotBlank() == true) {
-                _state.value.meals
-            } else {
                 _state.value.meals.filter {
-                    it.strMeal.lowercase().contains(query?.lowercase() ?: "")
+                    it.strMeal.lowercase().contains(query.lowercase())
                 }
-            }
+            } else _state.value.meals
             _state.emit(_state.value.copy(query = query, filteredMeals = filteredMeals))
         }
     }

@@ -65,6 +65,7 @@ import com.schibsted.nde.R
 import com.schibsted.nde.feature.common.MealImage
 import com.schibsted.nde.model.MealDetails
 import com.schibsted.nde.model.MealResponse
+import com.schibsted.nde.model.filterByName
 import com.schibsted.nde.ui.typography
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -186,15 +187,19 @@ fun MealsScreenContent(
                     }
                 }
                 else -> {
-                    if (allMeals.isNotEmpty()) {
-                        MealGridContent(allMeals)
-                    } else {
+                    if (allMeals.isEmpty() ) {
                         MealGridContent(state.filteredMeals)
                         LaunchedEffect(Unit) {
                             coroutineScope.launch {
                                 viewModel.addMealsToDatabase(state.meals)
                             }
                         }
+                    } else {
+                        MealGridContent(
+                            viewModel.state.value.query?.let { query ->
+                                allMeals.filterByName(query)
+                            } ?: allMeals
+                        )
                     }
                 }
             }

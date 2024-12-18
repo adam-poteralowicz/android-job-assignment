@@ -7,3 +7,7 @@ data class MealResponse(
     val strMealThumb: String,
     val strInstructions: String
 )
+
+fun List<MealResponse>.filterByName(query: String) = filter {
+    it.strMeal.lowercase().contains(query.lowercase())
+}

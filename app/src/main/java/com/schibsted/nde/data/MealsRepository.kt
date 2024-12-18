@@ -14,7 +14,9 @@ class MealsRepository @Inject constructor(
     private val backendApi: BackendApi,
     mealEntityDao: MealEntityDao
 ) {
-    val allMealsFlow: Flow<List<MealResponse>> = mealEntityDao.getAll().map { it.map { entity -> entity.toMealResponse() } }
+    val allMealsFlow: Flow<List<MealResponse>> = mealEntityDao.getAll().map {
+        it.map { entity -> entity.toMealResponse() }.sortedBy { meal -> meal.strMeal }
+    }
 
     suspend fun getMeals(): List<MealResponse> = backendApi.getMeals().meals
 
