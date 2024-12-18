@@ -1,3 +1,4 @@
+//noinspection UsingMaterialAndMaterial3Libraries
 package com.schibsted.nde.feature.meals
 
 import android.content.res.Configuration
@@ -54,16 +55,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.schibsted.nde.R
 import com.schibsted.nde.feature.common.MealImage
 import com.schibsted.nde.model.MealDetails
 import com.schibsted.nde.model.MealResponse
+import com.schibsted.nde.model.filterByName
 import com.schibsted.nde.ui.typography
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -74,7 +78,6 @@ fun MealsScreen(
     navigateToDetails: (MealDetails) -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
-    val context = LocalContext.current
     val modalBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
 
     ModalBottomSheetLayout(
@@ -87,7 +90,7 @@ fun MealsScreen(
     ) {
         Scaffold(topBar = {
             TopAppBar(
-                title = { Text(context.getString(R.string.app_name)) },
+                title = { Text(stringResource(R.string.app_name)) },
                 actions = {
                     IconButton(onClick = {
                         coroutineScope.launch { modalBottomSheetState.show() }
@@ -107,7 +110,6 @@ fun ModalBottomSheetContent(
     onSearch: (String?) -> Unit,
     coroutineScope: CoroutineScope
 ) {
-    val context = LocalContext.current
     val focusManager = LocalFocusManager.current
     if (state.currentValue != ModalBottomSheetValue.Hidden) {
         DisposableEffect(Unit) {
@@ -121,7 +123,7 @@ fun ModalBottomSheetContent(
         TextField(
             value = query,
             onValueChange = { query = it },
-            label = { Text(context.getString(R.string.query)) },
+            label = { Text(stringResource(R.string.query)) },
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
             keyboardActions = KeyboardActions(onSearch = {
@@ -137,14 +139,14 @@ fun ModalBottomSheetContent(
                 query = ""
                 coroutineScope.launch { state.hide() }
             }) {
-                Text(context.getString(R.string.clear))
+                Text(stringResource(R.string.clear))
             }
             Spacer(Modifier.width(16.dp))
             Button(onClick = {
                 onSearch(query)
                 coroutineScope.launch { state.hide() }
             }) {
-                Text(context.getString(R.string.search))
+                Text(stringResource(R.string.search))
             }
         }
     }
@@ -169,34 +171,43 @@ fun MealsScreenContent(
             )
         )
     ) {
-        Column {
-            val selected = state.selectedMeal
-            when {
-                state.isLoading -> return
-                state.filteredMeals.isEmpty() -> {
-                    Text(text = LocalContext.current.getString(R.string.no_meals_found))
+        if (state.isLoading) return
+        val selected = state.selectedMeal
+        when {
+            state.filteredMeals.isEmpty() -> {
+                Box(Modifier.align(Alignment.Center)) {
+                    Text(
+                        modifier = Modifier.testTag("empty_state_text"),
+                        text = stringResource(R.string.no_meals_found),
+                        style = MaterialTheme.typography.h6,
+                        fontSize = 28.sp
+                    )
                 }
-                selected != null -> {
+            }
+            selected != null -> {
+                LaunchedEffect(Unit) {
+                    val details = MealDetails(
+                        image = selected.strMealThumb,
+                        name = selected.strMeal,
+                        instructions = selected.strInstructions
+                    )
+                    navigateToDetails(details)
+                }
+            }
+            else -> Column {
+                if (allMeals.isEmpty()) {
+                    MealGridContent(state.filteredMeals)
                     LaunchedEffect(Unit) {
-                        val details = MealDetails(
-                            image = selected.strMealThumb,
-                            name = selected.strMeal,
-                            instructions = selected.strInstructions
-                        )
-                        navigateToDetails(details)
-                    }
-                }
-                else -> {
-                    if (allMeals.isNotEmpty()) {
-                        MealGridContent(allMeals)
-                    } else {
-                        MealGridContent(state.filteredMeals)
-                        LaunchedEffect(Unit) {
-                            coroutineScope.launch {
-                                viewModel.addMealsToDatabase(state.meals)
-                            }
+                        coroutineScope.launch {
+                            viewModel.addMealsToDatabase(state.meals)
                         }
                     }
+                } else {
+                    MealGridContent(
+                        viewModel.state.value.query?.let { query ->
+                            allMeals.filterByName(query)
+                        } ?: allMeals
+                    )
                 }
             }
         }
@@ -245,6 +256,7 @@ fun MealRowComposable(meal: MealResponse, viewModel: MealsViewModel = hiltViewMo
             .clip(RoundedCornerShape(4.dp))
             .padding(16.dp)
             .clickable { viewModel.onMealChosen(meal) }
+            .testTag("meal_row")
     ) {
         MealImage(meal.strMealThumb, Modifier.size(64.dp))
         Column(

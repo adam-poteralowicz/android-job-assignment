@@ -14,9 +14,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
+import com.schibsted.nde.feature.common.Toolbar
 import com.schibsted.nde.model.MealDetails
 
 @Composable
@@ -34,6 +34,7 @@ fun DetailsScreen(
 @Composable
 fun PortraitDetailsContent(details: MealDetails) {
     Column(Modifier.padding(8.dp)) {
+        Toolbar(details.name)
         Row(Modifier.align(Alignment.CenterHorizontally)) {
             Image(
                 modifier = Modifier.padding(bottom = 16.dp),
@@ -41,12 +42,6 @@ fun PortraitDetailsContent(details: MealDetails) {
                 contentDescription = "mealImage"
             )
         }
-        Text(
-            modifier = Modifier.padding(bottom = 16.dp),
-            text = details.name,
-            fontWeight = FontWeight.Bold,
-            style = MaterialTheme.typography.h5
-        )
         Column(
             Modifier
                 .fillMaxWidth()
@@ -62,28 +57,26 @@ fun PortraitDetailsContent(details: MealDetails) {
 
 @Composable
 fun LandscapeDetailsContent(details: MealDetails) {
-    Row(Modifier.padding(8.dp)) {
-        Column(Modifier.padding(end = 16.dp)) {
-            Image(
-                modifier = Modifier.padding(bottom = 8.dp),
-                painter = rememberAsyncImagePainter(model = details.image),
-                contentDescription = "mealImage"
-            )
-            Text(
-                text = details.name,
-                fontWeight = FontWeight.Bold,
-                style = MaterialTheme.typography.h5
-            )
-        }
-        Column(
-            Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-        ) {
-            Text(
-                text = details.instructions,
-                style = MaterialTheme.typography.subtitle1,
-            )
+    Column {
+        Toolbar(details.name)
+        Row(Modifier.padding(8.dp)) {
+            Column(Modifier.padding(end = 16.dp)) {
+                Image(
+                    modifier = Modifier.padding(bottom = 8.dp),
+                    painter = rememberAsyncImagePainter(model = details.image),
+                    contentDescription = "mealImage"
+                )
+            }
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+            ) {
+                Text(
+                    text = details.instructions,
+                    style = MaterialTheme.typography.subtitle1,
+                )
+            }
         }
     }
 }
