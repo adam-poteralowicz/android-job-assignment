@@ -51,10 +51,8 @@ class MealsViewModel @Inject constructor(
         }
     }
 
-    fun onMealChosen(meal: MealResponse) {
-        viewModelScope.launch {
-            _state.emit(_state.value.copy(selectedMeal = meal))
-        }
+    fun onMealChosen(meal: MealResponse) = viewModelScope.launch {
+        _state.emit(_state.value.copy(selectedMeal = meal))
     }
 
     fun addMealsToDatabase(meals: List<MealResponse>) = viewModelScope.launch {

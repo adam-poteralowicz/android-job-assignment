@@ -1,3 +1,4 @@
+//noinspection UsingMaterialAndMaterial3Libraries
 package com.schibsted.nde.feature.meals
 
 import android.content.res.Configuration
@@ -54,8 +55,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -74,7 +75,6 @@ fun MealsScreen(
     navigateToDetails: (MealDetails) -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
-    val context = LocalContext.current
     val modalBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
 
     ModalBottomSheetLayout(
@@ -87,7 +87,7 @@ fun MealsScreen(
     ) {
         Scaffold(topBar = {
             TopAppBar(
-                title = { Text(context.getString(R.string.app_name)) },
+                title = { Text(stringResource(R.string.app_name)) },
                 actions = {
                     IconButton(onClick = {
                         coroutineScope.launch { modalBottomSheetState.show() }
@@ -107,7 +107,6 @@ fun ModalBottomSheetContent(
     onSearch: (String?) -> Unit,
     coroutineScope: CoroutineScope
 ) {
-    val context = LocalContext.current
     val focusManager = LocalFocusManager.current
     if (state.currentValue != ModalBottomSheetValue.Hidden) {
         DisposableEffect(Unit) {
@@ -121,7 +120,7 @@ fun ModalBottomSheetContent(
         TextField(
             value = query,
             onValueChange = { query = it },
-            label = { Text(context.getString(R.string.query)) },
+            label = { Text(stringResource(R.string.query)) },
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
             keyboardActions = KeyboardActions(onSearch = {
@@ -137,14 +136,14 @@ fun ModalBottomSheetContent(
                 query = ""
                 coroutineScope.launch { state.hide() }
             }) {
-                Text(context.getString(R.string.clear))
+                Text(stringResource(R.string.clear))
             }
             Spacer(Modifier.width(16.dp))
             Button(onClick = {
                 onSearch(query)
                 coroutineScope.launch { state.hide() }
             }) {
-                Text(context.getString(R.string.search))
+                Text(stringResource(R.string.search))
             }
         }
     }
@@ -174,7 +173,7 @@ fun MealsScreenContent(
             when {
                 state.isLoading -> return
                 state.filteredMeals.isEmpty() -> {
-                    Text(text = LocalContext.current.getString(R.string.no_meals_found))
+                    Text(text = stringResource(R.string.no_meals_found))
                 }
                 selected != null -> {
                     LaunchedEffect(Unit) {
