@@ -56,6 +56,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -176,6 +177,7 @@ fun MealsScreenContent(
             state.filteredMeals.isEmpty() -> {
                 Box(Modifier.align(Alignment.Center)) {
                     Text(
+                        modifier = Modifier.testTag("empty_state_text"),
                         text = stringResource(R.string.no_meals_found),
                         style = MaterialTheme.typography.h6,
                         fontSize = 28.sp
@@ -254,6 +256,7 @@ fun MealRowComposable(meal: MealResponse, viewModel: MealsViewModel = hiltViewMo
             .clip(RoundedCornerShape(4.dp))
             .padding(16.dp)
             .clickable { viewModel.onMealChosen(meal) }
+            .testTag("meal_row")
     ) {
         MealImage(meal.strMealThumb, Modifier.size(64.dp))
         Column(
